@@ -74,6 +74,19 @@ void ATenAIController::BeginPlay()
 	}
 }
 
+void ATenAIController::OnPossess(APawn* InPawn)
+{
+	Super::OnPossess(InPawn);
+
+	if (InPawn)
+	{
+		if (BlackboardComp)
+		{
+			BlackboardComp->SetValueAsVector(TEXT("SpawnLocation"), InPawn->GetActorLocation());
+		}
+	}
+}
+
 void ATenAIController::OnPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus)
 {
 	APawn* PlayerPawn = UGameplayStatics::GetPlayerPawn(GetWorld(), 0);
@@ -86,7 +99,6 @@ void ATenAIController::OnPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus)
 	{
 		BlackboardComp->SetValueAsObject(TEXT("TargetActor"), Actor);
 		BlackboardComp->SetValueAsBool(TEXT("CanSeeTarget"), true);
-		BlackboardComp->SetValueAsVector(TEXT("TargetLastKnownLocation"), Actor->GetActorLocation());
 		BlackboardComp->SetValueAsBool(TEXT("IsInvestigating"), false);
 		UE_LOG(LogTemp, Warning, TEXT("Success : Target actor is %s"), *Actor->GetName());
 	}
@@ -94,6 +106,7 @@ void ATenAIController::OnPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus)
 	{
 		BlackboardComp->SetValueAsBool(TEXT("CanSeeTarget"), false);
 		BlackboardComp->SetValueAsBool(TEXT("IsInvestigating"), true);
+		BlackboardComp->SetValueAsVector(TEXT("TargetLastKnownLocation"), Stimulus.StimulusLocation);
 		UE_LOG(LogTemp, Warning, TEXT("Fail"));
 	}
 }
