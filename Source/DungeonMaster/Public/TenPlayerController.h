@@ -13,7 +13,7 @@ class DUNGEONMASTER_API ATenPlayerController : public APlayerController
 	GENERATED_BODY()
 	
 public:
-
+	//생성자
 	ATenPlayerController();
 
 	//IMC 세팅
@@ -31,6 +31,15 @@ public:
 	// IA_Look 지정 변수
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input")
 	UInputAction* LookAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input")
+	UInputAction* FireAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input")
+	UInputAction* EquipRangedAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input")
+	UInputAction* EquipMeleeAction;
 
 	virtual void BeginPlay() override;
 };
