@@ -13,7 +13,7 @@ class DUNGEONMASTER_API ATenPlayerController : public APlayerController
 	GENERATED_BODY()
 	
 public:
-
+	//持失切
 	ATenPlayerController();
 
 	//IMC 室特
