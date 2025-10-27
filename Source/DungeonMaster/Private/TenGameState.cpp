@@ -6,8 +6,8 @@
 #include "EnemySpawnVolume.h"
 #include "ClearPortal.h"
 #include "TenGameInstance.h"
-//#include "TenPlayerController.h"
-//#include "TenCharacter.h"
+#include "TenPlayerController.h"
+#include "TenCharacter.h"
 #include "Components/TextBlock.h"
 #include "Blueprint/UserWidget.h"
 #include "Engine/World.h"
@@ -98,10 +98,6 @@ void ATenGameState::StageStart()
         }
     }
     
-    //// 적 스폰 테스트용
-    //SpawnedEnemyCount = 5;
-    //AliveEnemyCount = 5;
-
     // 적 스폰    
     TArray<AActor*> FoundVolumes;
     UGameplayStatics::GetAllActorsOfClass(GetWorld(), AEnemySpawnVolume::StaticClass(), FoundVolumes);
