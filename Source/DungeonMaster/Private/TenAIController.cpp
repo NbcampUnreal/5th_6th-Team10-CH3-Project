@@ -6,6 +6,7 @@
 #include "Perception/AIPerceptionComponent.h"
 #include "Perception/AISenseConfig_Sight.h"
 #include "Kismet/GameplayStatics.h"
+#include "BrainComponent.h"
 
 ATenAIController::ATenAIController()
 {
@@ -41,6 +42,25 @@ void ATenAIController::StartBehaviorTree()
 	{
 		UE_LOG(LogTemp, Warning, TEXT("[DM] Behavior Tree Asset not set!"));
 	}
+}
+
+void ATenAIController::StopAI()
+{
+	if (UBrainComponent* BrainComp = GetBrainComponent())
+	{
+		BrainComp->StopLogic(TEXT("Monster Died"));
+		UE_LOG(LogTemp, Warning, TEXT("[DM] AI Logic Stopped"));
+	}
+
+	// AI Perception 비활성화
+	if (AIPerception)
+	{
+		AIPerception->Deactivate();
+		AIPerception->OnPerceptionUpdated.RemoveAll(this);
+		UE_LOG(LogTemp, Warning, TEXT("[DM] AI Perception Deactivated"));
+	}
+
+	UnPossess();
 }
 
 void ATenAIController::BeginPlay()

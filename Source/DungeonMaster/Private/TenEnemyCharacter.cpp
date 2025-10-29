@@ -15,17 +15,24 @@ ATenEnemyCharacter::ATenEnemyCharacter()
 {
 	AIControllerClass = ATenAIController::StaticClass();
 	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
+	AttackMontage = nullptr;
 	HitReactMontage = nullptr;
 	DieMontage = nullptr;
+	bIsDead = false;
 }
 
 float ATenEnemyCharacter::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
 {
+	if (bIsDead)
+	{
+		return DamageAmount;
+	}
+
 	float NewHealth = CurrentHealth - DamageAmount;
 	SetCurrentHealth(NewHealth);
 	
 	//애님 몽타주 재생(피격)
-	if (HitReactMontage && NewHealth > 0.f)
+	if (HitReactMontage && !bIsDead)
 	{
 		UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
 		if (AnimInstance && !AnimInstance->Montage_IsPlaying(HitReactMontage))
@@ -40,6 +47,17 @@ float ATenEnemyCharacter::TakeDamage(float DamageAmount, FDamageEvent const& Dam
 
 void ATenEnemyCharacter::MonsterAttack()
 {
+	//애님 몽타주 재생(공격)
+	if (AttackMontage)
+	{
+		UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+		if (AnimInstance && !AnimInstance->Montage_IsPlaying(AttackMontage))
+		{
+			AnimInstance->Montage_Play(AttackMontage);
+			UE_LOG(LogTemp, Warning, TEXT("[DM] Play AttackMontage"));
+		}
+	}
+
 	FVector Start = this->GetActorLocation();
 	FVector End = Start + this->GetActorForwardVector() * Range;    //캐릭터 범위 전방
 	//충돌 체크
@@ -91,15 +109,41 @@ void ATenEnemyCharacter::SetCurrentHealth(float NewHealth)
 
 void ATenEnemyCharacter::OnDeath()
 {
+	if (bIsDead) return;
+	bIsDead = true;
+
+	// AIController 중지
+	if (ATenAIController* AIController = Cast<ATenAIController>(GetController()))
+	{
+		AIController->StopAI(); // 수정 필요. 제대로 작동 안함.
+	}
+
 	// 애님 몽타주 재생(사망)
 	if (DieMontage)
 	{
 		UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
 		if (AnimInstance && !AnimInstance->Montage_IsPlaying(DieMontage))
 		{
-			AnimInstance->Montage_Play(DieMontage);
+			float AnimLength = AnimInstance->Montage_Play(DieMontage);
+
+			FTimerHandle AnimEnd;
+			GetWorld()->GetTimerManager().SetTimer(
+				AnimEnd,
+				this,
+				&ATenEnemyCharacter::OnDeathMontageEnded,
+				AnimLength,
+				false
+			);
+
 			UE_LOG(LogTemp, Warning, TEXT("[DM] Play DieMontage"));
 		}
 	}
+
 	UE_LOG(LogTemp, Warning, TEXT("[DM] Monster is dead"));
+}
+
+void ATenEnemyCharacter::OnDeathMontageEnded()
+{
+	UE_LOG(LogTemp, Warning, TEXT("[DM] Destroy"));
+	Destroy();
 }

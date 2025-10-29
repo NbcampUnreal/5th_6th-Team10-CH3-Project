@@ -33,12 +33,16 @@ protected:
 	float Damage;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attack")
 	float Range;
+	UPROPERTY(EditAnywhere, Category = "Animation")
+	UAnimMontage* AttackMontage;
 
 	UPROPERTY(EditAnywhere, Category = "Animation")
 	UAnimMontage* HitReactMontage;
 
 	void OnDeath();
+	void OnDeathMontageEnded();
 
 	UPROPERTY(EditAnywhere, Category = "Animation")
 	UAnimMontage* DieMontage;
+	bool bIsDead;
 };
