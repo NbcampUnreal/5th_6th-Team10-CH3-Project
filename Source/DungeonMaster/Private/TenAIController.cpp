@@ -57,6 +57,9 @@ void ATenAIController::StopAI()
 	{
 		AIPerception->Deactivate();
 		AIPerception->OnPerceptionUpdated.RemoveAll(this);
+
+		UAIPerceptionSystem::GetCurrent(GetWorld())->UnregisterListener(*AIPerception);
+
 		UE_LOG(LogTemp, Warning, TEXT("[DM] AI Perception Deactivated"));
 	}
 
