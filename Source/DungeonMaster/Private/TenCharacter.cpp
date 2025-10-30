@@ -5,6 +5,7 @@
 #include "TenPlayerController.h"                                                        //플레이어 컨트롤러 호출
 #include "GameFramework/CharacterMovementComponent.h"  //플레이어 무브먼트 함수 사용 시
 #include "CombatComponent.h"                                                        //컴뱃 컴포넌트 사용
+#include "TimerManager.h"
 
 ATenCharacter::ATenCharacter()
 {
@@ -29,10 +30,10 @@ ATenCharacter::ATenCharacter()
     CameraComp->bUsePawnControlRotation = false;
 
     // ===== 무기 메시 =====
-    RangedWeaponMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("RangedWeapon"));
+    RangedWeaponMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("RangedWeapon"));
     RangedWeaponMesh->SetupAttachment(GetMesh(), TEXT("RangedWeaponSocket"));
 
-    MeleeWeaponMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("MeleeWeapon"));
+    MeleeWeaponMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("MeleeWeapon"));
     MeleeWeaponMesh->SetupAttachment(GetMesh(), TEXT("MeleeWeaponSocket"));
 
     MuzzleLocation = CreateDefaultSubobject<USceneComponent>(TEXT("MuzzleLocation"));
@@ -52,10 +53,20 @@ ATenCharacter::ATenCharacter()
 void ATenCharacter::BeginPlay()
 {
     Super::BeginPlay();
-
     // 전투 컴포넌트 초기화
     if (CombatComp)
         CombatComp->InitializeCombat(this);
+
+    //게임시작시 무기 숨김 설정
+    if (UStaticMeshComponent* Ranged = GetRangedWeaponMesh())
+    {
+        Ranged->SetHiddenInGame(true);   // 원거리 무기 숨김
+    }
+
+    if (UStaticMeshComponent* Melee = GetMeleeWeaponMesh())
+    {
+        Melee->SetHiddenInGame(false);   // 근접 무기 보이게
+    }
 }
 
 //===== 캐릭터 조작 구현 =====
@@ -147,4 +158,57 @@ void ATenCharacter::EquipRangedWeapon(const FInputActionValue& Value)
 void ATenCharacter::EquipMeleeWeapon(const FInputActionValue& Value)
 {
     if (CombatComp) CombatComp->EquipMeleeWeapon();
+}
+
+
+//===== 몽타주 게터 정의=====
+UAnimMontage* ATenCharacter::GetRangedAttackMontage() const
+{
+    return RangedAttackMontage;
+}
+
+UAnimMontage* ATenCharacter::GetMeleeAttackMontage() const
+{
+    return MeleeAttackMontage;
+}
+
+//===== 대미지 =====
+float ATenCharacter::TakeDamage(float DamageAmount,
+    FDamageEvent const& DamageEvent,
+    AController* EventInstigator, AActor* DamageCauser)
+{
+    float ActualDamage = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
+
+    Health -= DamageAmount;
+    Health = FMath::Max(0.f, Health);
+
+    UE_LOG(LogTemp, Warning, TEXT("%s took %f damage, health now %f"), *GetName(), DamageAmount, Health);
+
+    if (Health <= 0.f)
+    {
+        OnDeath();
+    }
+    return ActualDamage;
+}
+
+//=====사망처리=====
+void ATenCharacter::OnDeath()
+{//사망처리 몽타주 
+    if (DeathMontage)
+    {
+        PlayAnimMontage(DeathMontage);
+        //몽타주 길이만큼 대기하고 Destroy
+        float Delay = DeathMontage->GetPlayLength();
+        GetWorldTimerManager().SetTimerForNextTick([this, Delay]()
+            {
+                FTimerHandle Handle;
+                GetWorldTimerManager().SetTimer(Handle, [this]() {
+                    Destroy();
+                    }, Delay, false);
+            });
+    }
+    else
+    {
+        Destroy();
+    }
 }
