@@ -41,6 +41,26 @@ float ATenEnemyCharacter::TakeDamage(float DamageAmount, FDamageEvent const& Dam
 			UE_LOG(LogTemp, Warning, TEXT("[DM] Play HitReactMontage"));
 		}
 	}
+	// 몬스터 경직 구현
+	if (AAIController* AI = Cast<AAIController>(GetController()))
+	{
+		AI->StopMovement();
+		GetWorld()->GetTimerManager().SetTimerForNextTick([this, AI]()
+			{
+				//1.5초뒤 다시 움직이게 설정
+				FTimerHandle StunHandle;
+				GetWorld()->GetTimerManager().SetTimer
+				(StunHandle, [AI]()
+					{
+						if (AI && AI->GetPawn())
+							AI->MoveToActor(AI->GetFocusActor());
+					}, 1.5f, false);
+				});
+		//피격 시 넉백
+		FVector KnockbackDir = (GetActorLocation() - DamageCauser->GetActorLocation()).GetSafeNormal();
+		LaunchCharacter(KnockbackDir * 300.f + FVector(0, 150.f, 150.f), true, true);
+	}
+
 
 	return DamageAmount;
 }

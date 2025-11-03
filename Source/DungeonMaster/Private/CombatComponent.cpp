@@ -14,19 +14,35 @@ UCombatComponent::UCombatComponent()
     CurrentWeaponType = EWeaponType::None;
     FireRate = 1.0f;            //초당 발사 횟수
     LastFireTime = 0.0f;    //발사 제한
-    MeleeDamage = 30.f; //근접 대미지
-    MeleeRange = 150.f;  //근접 거리
+    MeleeDamage = 40.f; //근접 대미지
+    MeleeRange = 250.f;  //근접 거리
 
-    MaxHealth = 100.f;                   //HP
+    MaxHealth = 200.f;                   //HP
     CurrentHealth = MaxHealth;  //현재 HP
+
+    bCanAttack = true;           // 공격 가능 여부
+    AttackCooldown = 1.0f;       // 후딜레이 시간
 }
 
 void UCombatComponent::BeginPlay()
 {
     Super::BeginPlay();
-    //오너 캐릭이 유효한지 확인
+    //오너 캐릭이 유효한지 확인과 무기 충돌 비활성화 
     if (OwningCharacter.IsValid())
-    {}
+    {
+        if (UStaticMeshComponent* Ranged = OwningCharacter->GetRangedWeaponMesh())
+        {
+            Ranged->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+            Ranged->SetCollisionResponseToAllChannels(ECR_Ignore);  // 모든 채널 무시
+            Ranged->SetSimulatePhysics(false);                      // 물리 반응 꺼짐
+        }
+        if (UStaticMeshComponent* Melee = OwningCharacter->GetMeleeWeaponMesh())
+        {
+            Melee->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+            Melee->SetCollisionResponseToAllChannels(ECR_Ignore);
+            Melee->SetSimulatePhysics(false);
+        }
+    }
 }
 
 void UCombatComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
@@ -39,6 +55,10 @@ void UCombatComponent::InitializeCombat(ATenCharacter* CharacterOwner)
 {
     if (!CharacterOwner) return;
     OwningCharacter = CharacterOwner;
+    
+    //가시성으로 든 무기를 시작을 근접무기로 확정 코드 추가
+    CurrentWeaponType = EWeaponType::Melee;
+
     UE_LOG(LogTemp, Warning, TEXT("CombatComponent initialized for %s"), *CharacterOwner->GetName());
 }
 
@@ -90,26 +110,40 @@ bool UCombatComponent::CanFire() const
 void UCombatComponent::StartFire()
 {
     if (!OwningCharacter.IsValid()) return;
+    UE_LOG(LogTemp, Warning, TEXT("[DEBUG] StartFire() Called. WeaponType = %d"), (int32)CurrentWeaponType);
+
     //원거리 무기 장착시에만 사격
     if (CurrentWeaponType == EWeaponType::Ranged)
-    {   //투사체 검사
+    {
         if (!CanFire()) return;
-        if (OwningCharacter.IsValid())
+        if (UAnimMontage* Montage = OwningCharacter->GetRangedAttackMontage())
         {
-            UAnimMontage* Montage = OwningCharacter->GetRangedAttackMontage();
-            if (Montage)
-            {
-                UE_LOG(LogTemp, Log, TEXT("Playing RangedAttackMontage"));
-                OwningCharacter->PlayAnimMontage(Montage);
-            }
+            OwningCharacter->PlayAnimMontage(Montage);
         }
-        // 몽타주 캐릭터에서 가져와서 재생
         FireProjectile();
     }
-    //Fire에 원거리 무기가 아니라면 근접 무기로 공격 함수 추가로 FIre하나로 원 근거리 공격 다 호출가능
+
+    // 근접 무기 공격
     else if (CurrentWeaponType == EWeaponType::Melee)
     {
-        MeleeAttack();  //근접 공격 호출
+        if (!bCanAttack) return;      // 후딜 중이면 리턴
+        bCanAttack = false;
+
+        // 몽타주 길이에 맞춰 후딜 설정
+        float Cooldown = AttackCooldown;
+        if (UAnimMontage* Montage = OwningCharacter->GetMeleeAttackMontage())
+            Cooldown = Montage->GetPlayLength();
+
+        MeleeAttack();
+
+        // 후딜 타이머
+        GetWorld()->GetTimerManager().SetTimer(
+            TimerHandle_ResetAttack,
+            this,
+            &UCombatComponent::ResetAttack,
+            AttackCooldown,
+            false
+        );
     }
 }
 
@@ -121,7 +155,7 @@ void UCombatComponent::FireProjectile()
     if (!Muzzle) return;
     
     UWorld* World = GetWorld();//GetWorld먼저 호출
-    if (!World || ProjectileClass) return; //불값 오류 방지
+    if (!World || !ProjectileClass) return; //불값 오류 방지
         
     FVector SpawnLocation = Muzzle->GetComponentLocation();
     FRotator SpawnRotation = OwningCharacter.IsValid() ? OwningCharacter->GetControlRotation() : FRotator::ZeroRotator;
@@ -135,52 +169,56 @@ void UCombatComponent::StopFire() {}
 //===== 근접 공격 =====
 void UCombatComponent::MeleeAttack()
 {
-    if (!OwningCharacter.IsValid() || CurrentWeaponType != EWeaponType::Melee) return;
+    if (!OwningCharacter.IsValid()) return;
 
-    bIsMeleeAttacking = true; // 애니메이션 블루프린트에서 사용
+    UE_LOG(LogTemp, Warning, TEXT("[DEBUG] MeleeAttack() called"));
 
-    if (!OwningCharacter.IsValid())
-    {// 몽타주 재생
-        UAnimMontage* Montage = OwningCharacter->GetMeleeAttackMontage();
-        if (Montage)
-        {
-            UE_LOG(LogTemp, Log, TEXT("Playing MeleeAttackMontage"));
-            OwningCharacter->PlayAnimMontage(Montage);
-        }
-        else
-        {
-            UE_LOG(LogTemp, Warning, TEXT("MeleeAttackMontage is null on character"));
-        }
-    }   
-         //공격 시작
-        FVector Start = OwningCharacter->GetActorLocation();
-        FVector End = Start + OwningCharacter->GetActorForwardVector() * MeleeRange;    //캐릭터 범위 전방
-        //충돌 체크
-        TArray<FHitResult> Hits;
-        FCollisionQueryParams Params;
-        Params.AddIgnoredActor(OwningCharacter.Get());
+    // 몽타주 재생
+    if (UAnimMontage* Montage = OwningCharacter->GetMeleeAttackMontage())
+        OwningCharacter->PlayAnimMontage(Montage);
 
-        bool bHit = GetWorld()->SweepMultiByChannel(
-            Hits,
-            Start,
-            End,
-            FQuat::Identity,
-            ECC_Pawn,   //콜리전 채널 사용
-            FCollisionShape::MakeSphere(50.f),  //근접 공격 반지름
-            Params
-        );
-        //충돌 유효 체크
-        if (bHit)
+    // 충돌 검사
+    FVector Start = OwningCharacter->GetActorLocation();
+    FVector End = Start + OwningCharacter->GetActorForwardVector() * MeleeRange;
+
+    TArray<FHitResult> Hits;
+    FCollisionQueryParams Params;
+    Params.AddIgnoredActor(OwningCharacter.Get());
+
+    bool bHit = GetWorld()->SweepMultiByChannel(
+        Hits,
+        Start,
+        End,
+        FQuat::Identity,
+        ECC_Pawn,  //  채널 사용
+        FCollisionShape::MakeSphere(100.f),
+        Params
+    );
+
+    DrawDebugSphere(GetWorld(), End, 80.f, 12, bHit ? FColor::Green : FColor::Red, false, 1.0f);
+    //디버그용 충돌 영역
+    UE_LOG(LogTemp, Warning, TEXT("MeleeAttack: bHit=%s, HitCount=%d"), bHit ? TEXT("true") : TEXT("false"), Hits.Num());
+
+    if (bHit)
+    {
+        for (const FHitResult& H : Hits)
         {
-            for (const FHitResult& H : Hits)
+            if (AActor* HitActor = H.GetActor())
             {
-                if (AActor* HitActor = H.GetActor())
-                {   //자기 자신 제외 대미지 적용
-                    if (HitActor != OwningCharacter.Get())
-                        UGameplayStatics::ApplyDamage(HitActor, MeleeDamage, OwningCharacter->GetController(), OwningCharacter.Get(), UDamageType::StaticClass());
+                if (HitActor != OwningCharacter.Get())
+                {
+                    UGameplayStatics::ApplyDamage(
+                        HitActor,
+                        MeleeDamage,
+                        OwningCharacter->GetController(),
+                        OwningCharacter.Get(),
+                        UDamageType::StaticClass()
+                    );
+                    UE_LOG(LogTemp, Warning, TEXT("Hit: %s, Damage: %f"), *HitActor->GetName(), MeleeDamage);
                 }
             }
         }
+    }
 }
 
 
@@ -195,4 +233,11 @@ void UCombatComponent::ApplyDamageToCharacter(float DamageAmount)
         // 캐릭터 사망 처리
         OwningCharacter->Destroy();
     }
+}
+
+// ===== 공격 후딜 리셋 =====
+void UCombatComponent::ResetAttack()
+{
+    bCanAttack = true;
+    UE_LOG(LogTemp, Log, TEXT("Attack cooldown ended. Ready to attack again."));
 }

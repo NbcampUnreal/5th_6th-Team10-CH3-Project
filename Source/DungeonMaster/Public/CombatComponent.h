@@ -65,6 +65,12 @@ protected:
     float MeleeDamage;  //근접 데미지
     float MeleeRange;      //근접 거리
 
+    bool bCanAttack;                     // 공격 가능 여부
+    float AttackCooldown;                // 후딜 시간
+    FTimerHandle TimerHandle_ResetAttack; // 타이머 핸들
+
+    void ResetAttack();                  // 후딜 끝내는 함수
+
     //총알 발사체 ,총알 자체에 대미지 줄 예정
     UPROPERTY(EditDefaultsOnly, Category = "Combat")
     TSubclassOf<AActor> ProjectileClass;
