@@ -18,6 +18,7 @@ class ATenCharacter;                        //캐릭터 전방 선언 (CombatComponent�
 class UStaticMeshComponent;         // 무기들이 전부 스태틱 매시
 class USceneComponent;                 // 루트컴포넌트
 class UAnimMontage;                     // 애니메이션 몽타주 사용
+//class AProjectile;                              //발사체
 
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
 class DUNGEONMASTER_API UCombatComponent : public UActorComponent
@@ -42,7 +43,7 @@ public:
 
     // 공격
     void StartFire();       // 총 공격
-    void StopFire();        // 총 공격 종료 (옵션)
+    void StopFire();        // 총 공격 종료 
     void MeleeAttack(); // 근접 공격
 
     // 체력/데미지
@@ -86,7 +87,6 @@ protected:
     //캐릭터에서 쓰는 게터 함수들
     UStaticMeshComponent* GetRangedWeaponMesh() const;
     UStaticMeshComponent* GetMeleeWeaponMesh() const;
-    //USkeletalMeshComponent* GetCharacterMesh() const;
     USceneComponent* GetMuzzleLocation() const;
     bool CanFire() const;
     //총알 함수
