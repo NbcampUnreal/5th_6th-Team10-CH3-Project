@@ -124,7 +124,7 @@ void ATenGameState::StageStart()
                 if (SpawnedMonster)
                 {
                     // 3. 몬스터의 델리게이트에 GameState의 함수를 바인딩(등록)
-                    // SpawnedMonster->(델리게이트 이름).AddDynamic(this, &AMyGameState::OnKillEnemy);
+                    SpawnedMonster->OnEnemyKilled.AddDynamic(this, &ATenGameState::OnKillEnemy);
                     // 현재 적 AI 카운트 증가
                     AliveEnemyCount++;
                 }                            
@@ -134,8 +134,9 @@ void ATenGameState::StageStart()
     UE_LOG(LogTemp, Warning, TEXT("%d Enemies Spawned"), AliveEnemyCount);
 }
 
-void ATenGameState::OnKillEnemy()
+void ATenGameState::OnKillEnemy(int32 Gold)
 {
+    AddGold(Gold);
     AliveEnemyCount--;
     UE_LOG(LogTemp, Warning, TEXT("AliveEnemyCount : %d "), AliveEnemyCount);
 

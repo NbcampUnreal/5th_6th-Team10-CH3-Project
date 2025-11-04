@@ -160,6 +160,8 @@ void ATenEnemyCharacter::OnDeath()
 	}
 
 	UE_LOG(LogTemp, Warning, TEXT("[DM] Monster is dead"));
+
+	OnEnemyKilled.Broadcast(Gold);
 }
 
 void ATenEnemyCharacter::OnDeathMontageEnded()

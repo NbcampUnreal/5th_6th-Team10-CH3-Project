@@ -56,8 +56,8 @@ public:
 	// 메인 레벨로 (던전 클리어, 사망 등)
 	void ToMainLevel();
 	// 적 처치 시 호출
-	UFUNCTION(Exec)
-	void OnKillEnemy();
+	UFUNCTION()
+	void OnKillEnemy(int32 Gold);
 	// 사망 시
 	void PlayerDeath();
 	// 보스전투 시작할 때
