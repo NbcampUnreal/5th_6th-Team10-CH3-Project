@@ -18,6 +18,7 @@ public:
 
 	FORCEINLINE UBlackboardComponent* GetBlackboardComp() const { return BlackboardComp.Get(); }
 	void StartBehaviorTree();
+	void StopAI();
 
 protected:
 	virtual void BeginPlay() override;
