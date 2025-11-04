@@ -29,7 +29,7 @@ void UCombatComponent::BeginPlay()
     Super::BeginPlay();
     //오너 캐릭이 유효한지 확인과 무기 충돌 비활성화 
     if (OwningCharacter.IsValid())
-    {
+    {   //무기 충돌 판정 제거 
         if (UStaticMeshComponent* Ranged = OwningCharacter->GetRangedWeaponMesh())
         {
             Ranged->SetCollisionEnabled(ECollisionEnabled::NoCollision);
@@ -65,7 +65,6 @@ void UCombatComponent::InitializeCombat(ATenCharacter* CharacterOwner)
 // ===== 플레이어에게 정의된 무기 접근 게터 =====
 UStaticMeshComponent* UCombatComponent::GetRangedWeaponMesh() const { return OwningCharacter.IsValid() ? OwningCharacter->GetRangedWeaponMesh() : nullptr; }
 UStaticMeshComponent* UCombatComponent::GetMeleeWeaponMesh() const { return OwningCharacter.IsValid() ? OwningCharacter->GetMeleeWeaponMesh() : nullptr; }
-//USkeletalMeshComponent* UCombatComponent::GetCharacterMesh() const { return OwningCharacter.IsValid() ? OwningCharacter->GetMesh() : nullptr; }
 USceneComponent* UCombatComponent::GetMuzzleLocation() const { return OwningCharacter.IsValid() ? OwningCharacter->GetMuzzleLocation() : nullptr; }
 
 // ===== 무기 스왑 =====
@@ -108,43 +107,39 @@ bool UCombatComponent::CanFire() const
 
 // ===== 사격 함수 =====
 void UCombatComponent::StartFire()
-{
-    if (!OwningCharacter.IsValid()) return;
+{   //후딜 중이면 리턴
+    if (!OwningCharacter.IsValid()|| !bCanAttack) return;
+    bCanAttack = false; 
     UE_LOG(LogTemp, Warning, TEXT("[DEBUG] StartFire() Called. WeaponType = %d"), (int32)CurrentWeaponType);
 
     //원거리 무기 장착시에만 사격
     if (CurrentWeaponType == EWeaponType::Ranged)
     {
         if (!CanFire()) return;
+        //원거리 공격 몽타주 재생
         if (UAnimMontage* Montage = OwningCharacter->GetRangedAttackMontage())
-        {
             OwningCharacter->PlayAnimMontage(Montage);
-        }
+        
         FireProjectile();
     }
 
     // 근접 무기 공격
     else if (CurrentWeaponType == EWeaponType::Melee)
     {
-        if (!bCanAttack) return;      // 후딜 중이면 리턴
-        bCanAttack = false;
-
-        // 몽타주 길이에 맞춰 후딜 설정
-        float Cooldown = AttackCooldown;
         if (UAnimMontage* Montage = OwningCharacter->GetMeleeAttackMontage())
-            Cooldown = Montage->GetPlayLength();
+            OwningCharacter->PlayAnimMontage(Montage);
 
         MeleeAttack();
-
-        // 후딜 타이머
-        GetWorld()->GetTimerManager().SetTimer(
-            TimerHandle_ResetAttack,
-            this,
-            &UCombatComponent::ResetAttack,
-            AttackCooldown,
-            false
-        );
     }
+
+    // 공통 후딜
+    GetWorld()->GetTimerManager().SetTimer(
+        TimerHandle_ResetAttack,
+        this,
+        &UCombatComponent::ResetAttack,
+        AttackCooldown,
+        false
+    ); 
 }
 
 //===== 발사체 =====
@@ -173,7 +168,7 @@ void UCombatComponent::MeleeAttack()
 
     UE_LOG(LogTemp, Warning, TEXT("[DEBUG] MeleeAttack() called"));
 
-    // 몽타주 재생
+    // 근접 몽타주 재생
     if (UAnimMontage* Montage = OwningCharacter->GetMeleeAttackMontage())
         OwningCharacter->PlayAnimMontage(Montage);
 
@@ -239,5 +234,5 @@ void UCombatComponent::ApplyDamageToCharacter(float DamageAmount)
 void UCombatComponent::ResetAttack()
 {
     bCanAttack = true;
-    UE_LOG(LogTemp, Log, TEXT("Attack cooldown ended. Ready to attack again."));
+    UE_LOG(LogTemp, Log, TEXT("Attack cooldown ended."));
 }

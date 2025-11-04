@@ -37,7 +37,7 @@ ATenCharacter::ATenCharacter()
     MeleeWeaponMesh->SetupAttachment(GetMesh(), TEXT("MeleeWeaponSocket"));
 
     MuzzleLocation = CreateDefaultSubobject<USceneComponent>(TEXT("MuzzleLocation"));
-    MuzzleLocation->SetupAttachment(RangedWeaponMesh);
+    MuzzleLocation->SetupAttachment(RangedWeaponMesh, TEXT("Muzzle"));
 
     // ===== 캐릭터 스탯 =====
     MaxHealth = 100.f;
