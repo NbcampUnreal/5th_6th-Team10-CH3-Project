@@ -18,10 +18,7 @@ public:
 	ATenGameState();
 
 	virtual void BeginPlay() override;
-
-	// 골드를 저장하는 변수
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Gold")
-	int32 Gold;
+	
 	// 현재 레벨에서 스폰된 적의 수
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Enemy")
 	int32 SpawnedEnemyCount;
@@ -34,17 +31,19 @@ public:
 	// Clear 액터 설정
 	UPROPERTY(EditAnywhere)
 	TSubclassOf<AActor> ClearPortalClass;
+	// 메인메뉴 UI 호출
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "MainMenu")
+	TSubclassOf<UUserWidget> MainMenuWidgetClass;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "MainMenu")
+	UUserWidget* MainMenuWidgetInstance;
 
-	// 현재 골드를 읽는 함수
-	UFUNCTION(BlueprintPure, Category = "Gold")
-	int32 GetGold() const;
 	// 골드 추가 함수
 	UFUNCTION(BlueprintCallable, Category = "Gold")
 	void AddGold(int32 Amount);
 	
 	// 던전을 시작할 때
 	UFUNCTION(Exec)
-	void DungeonStart();
+	void DungeonStart();	
 	// 랜덤 레벨 불러오기
 	void CallRandomLevel();
 	// 스테이지 시작
@@ -61,7 +60,12 @@ public:
 	void OnKillEnemy();
 	// 사망 시
 	void PlayerDeath();
+	// 보스전투 시작할 때
+	UFUNCTION(Exec)
+	void BossStart();
 	// HUD 업데이트
 	void UpdateHUD();
+	// MainUI 띄우기
+	void MainUI();
 
 };

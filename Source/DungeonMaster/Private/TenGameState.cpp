@@ -8,14 +8,16 @@
 #include "TenGameInstance.h"
 #include "TenPlayerController.h"
 #include "TenCharacter.h"
+#include "TenEnemyCharacter.h"
 #include "Components/TextBlock.h"
 #include "Blueprint/UserWidget.h"
 #include "Engine/World.h"
 #include "GameFramework/Actor.h"
 
 ATenGameState::ATenGameState()
+    :MainMenuWidgetClass(nullptr),
+    MainMenuWidgetInstance(nullptr)
 {
-	Gold = 0;
     AliveEnemyCount = 0;
     SpawnedEnemyCount = 0;      
 }
@@ -25,7 +27,7 @@ void ATenGameState::BeginPlay()
 	Super::BeginPlay();
 
 	UpdateHUD();
-
+    // 게임인스턴스 정보를 통해 '던전 진행중'인지 확인
     if (UGameInstance* GameInstance = GetGameInstance())
     {
         UTenGameInstance* TenGameInstance = Cast<UTenGameInstance>(GameInstance);
@@ -33,21 +35,25 @@ void ATenGameState::BeginPlay()
         {
             if (TenGameInstance->CurrentStage < TenGameInstance->StageRepeats)
             {
+                // 진행중이면 StageStart 호출
                 StageStart();
                 UE_LOG(LogTemp, Warning, TEXT("Stage Start!"));
+                
             }
         }
     }
-}
-
-int32 ATenGameState::GetGold() const
-{
-    return Gold;
+    // 현재 레벨 정보 불러오기
+    FString LevelName = GetWorld()->GetMapName();
+    LevelName.RemoveFromStart(GetWorld()->StreamingLevelsPrefix);
+    // MainUILevel 일 때, 메뉴 UI 생성
+    if (LevelName == TEXT("MainUILevel")) 
+    {
+        MainUI();
+    }
 }
 
 void ATenGameState::AddGold(int32 Amount)
-{
-    
+{    
     if (UGameInstance* GameInstance = GetGameInstance())
     {
         UTenGameInstance* TenGameInstance = Cast<UTenGameInstance>(GameInstance);
@@ -55,8 +61,7 @@ void ATenGameState::AddGold(int32 Amount)
         {
             TenGameInstance->AddGold(Amount);
         }
-    }
-    
+    }    
 }
 
 void ATenGameState::DungeonStart()
@@ -112,10 +117,17 @@ void ATenGameState::StageStart()
             AEnemySpawnVolume* SpawnVolume = Cast<AEnemySpawnVolume>(FoundVolumes[0]);
             if (SpawnVolume)
             {
-                // 적AI 랜덤 스폰
+                // 1. 적AI 랜덤 스폰
                 AActor* SpawnedActor = SpawnVolume->SpawnRandomEnemy();
-                // 현재 적 AI 카운트 증가
-                AliveEnemyCount++;                
+                // 2. 스폰된 액터를 AMonster 타입으로 캐스팅 (델리게이트)
+                ATenEnemyCharacter* SpawnedMonster = Cast<ATenEnemyCharacter>(SpawnedActor);
+                if (SpawnedMonster)
+                {
+                    // 3. 몬스터의 델리게이트에 GameState의 함수를 바인딩(등록)
+                    // SpawnedMonster->(델리게이트 이름).AddDynamic(this, &AMyGameState::OnKillEnemy);
+                    // 현재 적 AI 카운트 증가
+                    AliveEnemyCount++;
+                }                            
             }
         }
     }
@@ -151,8 +163,6 @@ void ATenGameState::StageClear()
         GetWorld()->SpawnActor<AClearPortal>(ClearPortalClass, SpawnLocation, FRotator::ZeroRotator);
     }
 }
-
-
 
 // 클리어 후 포탈에 닿으면
 void ATenGameState::OnClearPortalTouched()
@@ -203,6 +213,22 @@ void ATenGameState::PlayerDeath()
     ToMainLevel();
 }
 
+void ATenGameState::BossStart()
+{
+    UE_LOG(LogTemp, Warning, TEXT("Boss Start!"));
+    // 던전에서 보스로 갈 때 던전정보 초기화 (메인레벨에서 보스 돌입시 필요x)
+    if (UGameInstance* GameInstance = GetGameInstance())
+    {
+        UTenGameInstance* TenGameInstance = Cast<UTenGameInstance>(GameInstance);
+        if (TenGameInstance)
+        {
+            TenGameInstance->SetStageRepeats(0);
+            TenGameInstance->SetCurrentStage(0);
+        }
+    }
+    // 보스전투 레벨로 이동
+    UGameplayStatics::OpenLevel(GetWorld(), FName("Test_BossLevel"));
+}
 
 void ATenGameState::UpdateHUD()
 {
@@ -253,4 +279,34 @@ void ATenGameState::UpdateHUD()
 		}
 	}
     */
+}
+
+void ATenGameState::MainUI()
+{
+    // 1. MainMenuWidgetClass가 할당되었는지 확인
+    if (MainMenuWidgetClass)
+    {
+        MainMenuWidgetInstance = CreateWidget<UUserWidget>(GetWorld(), MainMenuWidgetClass);
+        if (MainMenuWidgetInstance)
+        {
+            MainMenuWidgetInstance->AddToViewport();
+
+            // PlayerController를 가져옴 (널 체크 포함)
+            if (APlayerController* PlayerController = GetWorld()->GetFirstPlayerController())
+            {
+                // 2. ATenPlayerController로 캐스팅하고 널 체크 수행
+                if (ATenPlayerController* TenPlayerController = Cast<ATenPlayerController>(PlayerController))
+                {
+                    TenPlayerController->SetInputMode(FInputModeUIOnly());
+                    TenPlayerController->bShowMouseCursor = true;
+                }
+                // (선택) ATenPlayerController 캐스팅에 실패했을 경우 APlayerController를 사용한 기본 설정
+                else
+                {
+                    PlayerController->SetInputMode(FInputModeUIOnly());
+                    PlayerController->bShowMouseCursor = true;
+                }
+            }
+        }
+    }
 }
