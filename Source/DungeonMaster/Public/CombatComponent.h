@@ -42,8 +42,10 @@ public:
     void EquipMeleeWeapon();
 
     // 공격
+    UFUNCTION(BlueprintCallable, Category = "Combat")
     void StartFire();       // 총 공격
     void StopFire();        // 총 공격 종료 
+    UFUNCTION(BlueprintCallable, Category = "Combat")
     void MeleeAttack(); // 근접 공격
 
     // 체력/데미지
