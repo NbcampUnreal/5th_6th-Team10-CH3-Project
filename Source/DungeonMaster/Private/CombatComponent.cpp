@@ -21,7 +21,7 @@ UCombatComponent::UCombatComponent()
     CurrentHealth = MaxHealth;  //현재 HP
 
     bCanAttack = true;           // 공격 가능 여부
-    AttackCooldown = 1.0f;       // 후딜레이 시간
+    AttackCooldown = 1.5f;       // 후딜레이 시간
 }
 
 void UCombatComponent::BeginPlay()
@@ -108,8 +108,8 @@ bool UCombatComponent::CanFire() const
 // ===== 사격 함수 =====
 void UCombatComponent::StartFire()
 {   //후딜 중이면 리턴
-    if (!OwningCharacter.IsValid()|| !bCanAttack) return;
-    bCanAttack = false; 
+    if (!OwningCharacter.IsValid() || !bCanAttack) return;
+    bCanAttack = false;
     UE_LOG(LogTemp, Warning, TEXT("[DEBUG] StartFire() Called. WeaponType = %d"), (int32)CurrentWeaponType);
 
     //원거리 무기 장착시에만 사격
@@ -119,17 +119,17 @@ void UCombatComponent::StartFire()
         //원거리 공격 몽타주 재생
         if (UAnimMontage* Montage = OwningCharacter->GetRangedAttackMontage())
             OwningCharacter->PlayAnimMontage(Montage);
-        
+
         FireProjectile();
     }
 
-    // 근접 무기 공격
+    //Fire에 원거리 무기가 아니라면 근접 무기로 공격 함수 추가로 FIre하나로 원 근거리 공격 다 호출가능
     else if (CurrentWeaponType == EWeaponType::Melee)
     {
-        if (UAnimMontage* Montage = OwningCharacter->GetMeleeAttackMontage())
-            OwningCharacter->PlayAnimMontage(Montage);
+       if(UAnimMontage* Montage = OwningCharacter->GetMeleeAttackMontage())
+           OwningCharacter->PlayAnimMontage(Montage);
 
-        MeleeAttack();
+        MeleeAttack();  //근접 공격 호출
     }
 
     // 공통 후딜
