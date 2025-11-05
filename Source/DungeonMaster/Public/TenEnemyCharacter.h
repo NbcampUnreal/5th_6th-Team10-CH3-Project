@@ -6,6 +6,9 @@
 #include "GameFramework/Character.h"
 #include "TenEnemyCharacter.generated.h"
 
+// µ¨¸®°ÔÀÌÆ® ¼±¾ð
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnEnemyKilled, int32, ScoreAmount);
+
 class UCombatComponent;
 
 UCLASS()
@@ -18,6 +21,10 @@ public:
 	virtual float TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser) override;
 
 	void MonsterAttack();
+
+	// µ¨¸®°ÔÀÌÆ®
+	UPROPERTY(BlueprintAssignable, Category = "Events")
+	FOnEnemyKilled OnEnemyKilled;
 
 protected:
 	virtual void BeginPlay() override;
@@ -41,6 +48,9 @@ protected:
 
 	void OnDeath();
 	void OnDeathMontageEnded();
+	
+	//Àû Ã³Ä¡ ½Ã °ñµå È¹µæ·®
+	int32 Gold = 0;
 
 	UPROPERTY(EditAnywhere, Category = "Animation")
 	UAnimMontage* DieMontage;
