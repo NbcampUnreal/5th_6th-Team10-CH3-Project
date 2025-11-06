@@ -48,6 +48,14 @@ ATenCharacter::ATenCharacter()
     // 이동 방향 회전
     GetCharacterMovement()->bOrientRotationToMovement = true;
     GetCharacterMovement()->RotationRate = FRotator(0.f, 800.f, 0.f);
+
+    //=====회피 관련=====
+   
+    //회피 이동거리
+    DodgeDistance = 600.f;
+    //회피 지속 시간
+    DodgeDuration = 0.2f;
+
 }
 
 void ATenCharacter::BeginPlay()
@@ -97,12 +105,16 @@ void ATenCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompon
             if (FireAction)
                 EnhancedInput->BindAction(FireAction, ETriggerEvent::Started, this, &ATenCharacter::StartFire);
 
-
+            //무기 불러오기
             if (EquipRangedAction)
                 EnhancedInput->BindAction(EquipRangedAction, ETriggerEvent::Triggered, this, &ATenCharacter::EquipRangedWeapon);
 
             if (EquipMeleeAction)
                 EnhancedInput->BindAction(EquipMeleeAction, ETriggerEvent::Triggered, this, &ATenCharacter::EquipMeleeWeapon);
+
+            //회피 
+            if(PC->DodgeAction)
+                EnhancedInput->BindAction(PC->DodgeAction, ETriggerEvent::Started, this, &ATenCharacter::Dodge);
         }
     }
 }
@@ -113,6 +125,8 @@ void ATenCharacter::Move(const FInputActionValue& Value)
     FVector2D MovementVector = Value.Get<FVector2D>();
     //컨트롤러가 있는지 체크
     if (!Controller) return;
+    //회피 방향용 이동 입력 저장
+    LastMoveInput = MovementVector;
     // 현재 컨트롤러의 회전을 가져옴
     const FRotator Rotation = Controller->GetControlRotation();
     const FRotator YawRotation(0, Rotation.Yaw, 0);
@@ -180,6 +194,13 @@ float ATenCharacter::TakeDamage(float DamageAmount,
 {
     float ActualDamage = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
 
+    //회피 중이면 데미지 무시
+    if (CombatComp && CombatComp->IsInvincible())
+    {
+        UE_LOG(LogTemp, Warning, TEXT("Damage ignored (Invincible during Dodge)"));
+        return 0.f;
+    }
+
     Health -= DamageAmount;
     Health = FMath::Max(0.f, Health);
 
@@ -212,4 +233,65 @@ void ATenCharacter::OnDeath()
     {
         Destroy();
     }
+}
+
+//=====회피 로직=====
+void ATenCharacter::Dodge()
+{
+    //회피 중복 방지
+    if (bIsDodging || !Controller || !CombatComp) return;
+
+    bIsDodging = true;
+    CombatComp->SetInvincible(true);
+
+    //  현재 입력된 방향(WASD) 기준으로 회피 
+    const FRotator ControlRot = Controller->GetControlRotation();
+    const FRotator YawRot(0.f, ControlRot.Yaw, 0.f);
+
+    // 입력 벡터 기준으로 실제 방향 처리
+    FVector DodgeDir = FVector::ZeroVector;
+    if (!LastMoveInput.IsNearlyZero())
+    {
+        FVector Forward = FRotationMatrix(YawRot).GetUnitAxis(EAxis::X);
+        FVector Right = FRotationMatrix(YawRot).GetUnitAxis(EAxis::Y);
+        DodgeDir = (Forward * LastMoveInput.X + Right * LastMoveInput.Y).GetSafeNormal();
+    }
+    else
+    {
+        // 입력 없으면 전방 회피
+        DodgeDir = FRotationMatrix(YawRot).GetUnitAxis(EAxis::X);
+    }
+
+    //회피 이동 속도
+    const float Speed = DodgeDistance / FMath::Max(0.01f, DodgeDuration);
+    const FVector DashVelocity = DodgeDir * Speed;
+
+    //회피 마찰 제거
+    if (auto* Move = GetCharacterMovement())
+    {
+        SavedBrakingFrictionFactor = Move->BrakingFrictionFactor;
+        Move->BrakingFriction = 0.f;
+        Move->GroundFriction = 0.f;
+        Move->MaxAcceleration = 999999.f;
+    }
+    //캐릭터 앞으로 이동
+    LaunchCharacter(DashVelocity, true, true);
+
+    //일정 시간 후 회피 종료
+    GetWorldTimerManager().SetTimer(Timer_DodgeEnd, [this]()
+        {
+            bIsDodging = false;
+
+            if (CombatComp)
+                CombatComp->SetInvincible(false); // 무적 해제
+
+            if (auto* Move = GetCharacterMovement())
+            {
+                Move->StopMovementImmediately();
+                Move->BrakingFrictionFactor = SavedBrakingFrictionFactor;
+                Move->GroundFriction = 8.f;
+                Move->MaxAcceleration = 2048.f;
+            }
+
+        }, DodgeDuration, false);
 }

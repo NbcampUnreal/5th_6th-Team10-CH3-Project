@@ -41,5 +41,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input")
 	UInputAction* EquipMeleeAction;
 
+	//회피 입력 액션
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input")
+	UInputAction* DodgeAction;
+
 	virtual void BeginPlay() override;
 };
