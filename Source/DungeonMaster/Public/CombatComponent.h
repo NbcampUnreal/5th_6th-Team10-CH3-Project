@@ -56,6 +56,10 @@ public:
     UPROPERTY(BlueprintReadOnly, Category = "Combat")
     bool bIsMeleeAttacking = false; // 애니메이션 블루프린트 연동용
 
+    //회피 무적 제어
+    void SetInvincible(bool bNewState) { bInvincible = bNewState; }
+    bool IsInvincible() const { return bInvincible; }
+
 protected:
     //플레이어가 조종하고 있는 캐릭터
     TWeakObjectPtr<ATenCharacter> OwningCharacter;
@@ -73,6 +77,10 @@ protected:
     FTimerHandle TimerHandle_ResetAttack; // 타이머 핸들
 
     void ResetAttack();                  // 후딜 끝내는 함수
+
+    //====회피 무적=====
+    UPROPERTY(VisibleAnywhere, Category = "Combat")
+    bool bInvincible = false;
 
     //총알 발사체 ,총알 자체에 대미지 줄 예정
     UPROPERTY(EditDefaultsOnly, Category = "Combat")

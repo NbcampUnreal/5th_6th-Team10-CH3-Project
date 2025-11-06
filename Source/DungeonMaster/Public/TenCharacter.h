@@ -113,6 +113,27 @@ protected:
     UFUNCTION()
     void EquipMeleeWeapon(const FInputActionValue& Value);
 
+    //=====회피 입력=====
+
+    //회피 함수
+    UFUNCTION()
+    void Dodge();
+
+    //회피 이동거리
+    UPROPERTY(EditAnywhere, Category = "Dodge")
+    float DodgeDistance ;
+
+    //회피 지속시간
+    UPROPERTY(EditAnywhere, Category = "Dodge")
+    float DodgeDuration;
+
+    //회피 중인지 여부
+    bool bIsDodging = false;
+    //회피 종료 타이머
+    float SavedBrakingFrictionFactor = 0.f;
+    FTimerHandle Timer_DodgeEnd;
+    //이동 방향에 따른 회피
+    FVector2D LastMoveInput = FVector2D::ZeroVector;
 public:
     //  무기 관련 게터
     UStaticMeshComponent* GetMeleeWeaponMesh() const { return MeleeWeaponMesh; }
