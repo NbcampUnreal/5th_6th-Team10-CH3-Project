@@ -6,6 +6,7 @@
 #include "GameFramework/CharacterMovementComponent.h"  //플레이어 무브먼트 함수 사용 시
 #include "CombatComponent.h"                                                        //컴뱃 컴포넌트 사용
 #include "TimerManager.h"
+#include "TenGameState.h"
 
 ATenCharacter::ATenCharacter()
 {
@@ -207,6 +208,12 @@ void ATenCharacter::OnDeath()
                     Destroy();
                     }, Delay, false);
             });
+        // GameState 에 PlayerDeath 함수 호출
+        ATenGameState* GameState = GetWorld() ? Cast<ATenGameState>(GetWorld()->GetGameState()) : nullptr;
+        if (GameState)
+        {
+            GameState->PlayerDeath(); 
+        }
     }
     else
     {

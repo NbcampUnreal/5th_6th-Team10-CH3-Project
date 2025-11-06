@@ -31,6 +31,8 @@ public:
 	// Clear 액터 설정
 	UPROPERTY(EditAnywhere)
 	TSubclassOf<AActor> ClearPortalClass;
+	UPROPERTY(EditAnywhere)
+	TSubclassOf<AActor> DungeonFinishPortalClass;
 	// 메인메뉴 UI 호출
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "MainMenu")
 	TSubclassOf<UUserWidget> MainMenuWidgetClass;
@@ -56,13 +58,15 @@ public:
 	// 메인 레벨로 (던전 클리어, 사망 등)
 	void ToMainLevel();
 	// 적 처치 시 호출
-	UFUNCTION()
+	UFUNCTION(Exec)
 	void OnKillEnemy(int32 Gold);
 	// 사망 시
 	void PlayerDeath();
-	// 보스전투 시작할 때
+	// 보스전투맵 입장
 	UFUNCTION(Exec)
 	void BossStart();
+	// 보스맵에서 실행될 함수
+	void BossBattle();
 	// HUD 업데이트
 	void UpdateHUD();
 	// MainUI 띄우기
