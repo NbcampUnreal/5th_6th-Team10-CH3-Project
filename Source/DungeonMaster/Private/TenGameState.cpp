@@ -5,6 +5,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "EnemySpawnVolume.h"
 #include "ClearPortal.h"
+#include "DungeonFinishPortal.h"
 #include "TenGameInstance.h"
 #include "TenPlayerController.h"
 #include "TenCharacter.h"
@@ -33,12 +34,16 @@ void ATenGameState::BeginPlay()
         UTenGameInstance* TenGameInstance = Cast<UTenGameInstance>(GameInstance);
         if (TenGameInstance)
         {
+            // 일반 던전 진행중이면 StageStart 호출
             if (TenGameInstance->CurrentStage < TenGameInstance->StageRepeats)
             {
-                // 진행중이면 StageStart 호출
                 StageStart();
                 UE_LOG(LogTemp, Warning, TEXT("Stage Start!"));
                 
+            }
+            if (TenGameInstance->IsBossBattle == true)
+            {
+                BossBattle();
             }
         }
     }
@@ -114,7 +119,8 @@ void ATenGameState::StageStart()
     {
         if (FoundVolumes.Num() > 0)
         {
-            AEnemySpawnVolume* SpawnVolume = Cast<AEnemySpawnVolume>(FoundVolumes[0]);
+            int32 RandomIndex = FMath::RandRange(0, FoundVolumes.Num() - 1);
+            AEnemySpawnVolume* SpawnVolume = Cast<AEnemySpawnVolume>(FoundVolumes[RandomIndex]);
             if (SpawnVolume)
             {
                 // 1. 적AI 랜덤 스폰
@@ -153,16 +159,27 @@ void ATenGameState::StageClear()
         UTenGameInstance* TenGameInstance = Cast<UTenGameInstance>(GameInstance);
         if (TenGameInstance)
         {
-            UE_LOG(LogTemp, Warning, TEXT("Stage %d Cleared!"), TenGameInstance->CurrentStage + 1);
-        }
-    }
+            if (TenGameInstance->IsBossBattle == false)
+            {
+                // Clear 포탈 생성
+                if (ClearPortalClass)
+                {
+                    UE_LOG(LogTemp, Warning, TEXT("Stage %d Cleared!"), TenGameInstance->CurrentStage + 1);
 
-    // Clear 포탈 생성
-    if (ClearPortalClass)
-    {
-        FVector SpawnLocation(0, 0, 100); // 적절한 위치로 조정 가능
-        GetWorld()->SpawnActor<AClearPortal>(ClearPortalClass, SpawnLocation, FRotator::ZeroRotator);
-    }
+                    FVector SpawnLocation(0, 0, 100); // 적절한 위치로 조정 가능
+                    GetWorld()->SpawnActor<AClearPortal>(ClearPortalClass, SpawnLocation, FRotator::ZeroRotator);
+                }
+            }
+            else
+            {
+                if (DungeonFinishPortalClass)
+                {
+                    FVector SpawnLocation(0, 0, 100); // 적절한 위치로 조정 가능
+                    GetWorld()->SpawnActor<ADungeonFinishPortal>(DungeonFinishPortalClass, SpawnLocation, FRotator::ZeroRotator);
+                }
+            }
+        }
+    }    
 }
 
 // 클리어 후 포탈에 닿으면
@@ -198,6 +215,7 @@ void ATenGameState::ToMainLevel()
         {
             TenGameInstance->SetStageRepeats(0);
             TenGameInstance->SetCurrentStage(0);
+            TenGameInstance->BossBattle(false);
         }
     }
     // 클리어레벨에서 메인레벨로
@@ -225,11 +243,19 @@ void ATenGameState::BossStart()
         {
             TenGameInstance->SetStageRepeats(0);
             TenGameInstance->SetCurrentStage(0);
+            TenGameInstance->BossBattle(true);
         }
     }
     // 보스전투 레벨로 이동
     UGameplayStatics::OpenLevel(GetWorld(), FName("Test_BossLevel"));
 }
+
+void ATenGameState::BossBattle()
+{
+    SpawnedEnemyCount = 1;
+    AliveEnemyCount = 1;
+}
+
 
 void ATenGameState::UpdateHUD()
 {

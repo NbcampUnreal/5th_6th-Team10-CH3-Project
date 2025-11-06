@@ -8,6 +8,7 @@ UTenGameInstance::UTenGameInstance()
 	TotalGold = 0;
 	CurrentStage = 0;
 	StageRepeats = 0;
+	IsBossBattle = false;
 }
 
 void UTenGameInstance::AddGold(int32 Amount)
@@ -29,5 +30,10 @@ void UTenGameInstance::SetStageRepeats(int32 amount)
 void UTenGameInstance::SetCurrentStage(int32 amount)
 {
 	CurrentStage = amount;
+}
+
+void UTenGameInstance::BossBattle(bool EnterBoss)
+{
+	IsBossBattle = EnterBoss;
 }
 

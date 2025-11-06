@@ -26,6 +26,9 @@ public:
 	// 게임 전체 누적 골드
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "GameData")
 	int32 TotalGold;
+	// 보스전 여부
+	bool IsBossBattle;
+
 	
 
 	// 골드 획득 함수
@@ -35,4 +38,5 @@ public:
 	void AddCurrentStage(int8 amount);
 	void SetStageRepeats(int32 amount);
 	void SetCurrentStage(int32 amount);
+	void BossBattle(bool EnterBoss);
 };
