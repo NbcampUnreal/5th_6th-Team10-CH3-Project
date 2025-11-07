@@ -160,8 +160,10 @@ void ATenEnemyCharacter::OnDeath()
 	}
 
 	UE_LOG(LogTemp, Warning, TEXT("[DM] Monster is dead"));
-
-	OnEnemyKilled.Broadcast(Gold);
+	//몬스터마다 개별 실행
+		OnEnemyKilled.Broadcast(Gold);
+		UE_LOG(LogTemp, Warning, TEXT("[DM] Gold Broadcasted Once: %d"), Gold);
+	
 }
 
 void ATenEnemyCharacter::OnDeathMontageEnded()

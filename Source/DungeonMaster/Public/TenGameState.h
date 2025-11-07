@@ -42,7 +42,17 @@ public:
 	// 골드 추가 함수
 	UFUNCTION(BlueprintCallable, Category = "Gold")
 	void AddGold(int32 Amount);
-	
+	//골드UI 갱신 함수
+	void UpdateTotalGoldUI(); 
+
+	// UI 블루프린트 클래스
+	UPROPERTY(EditDefaultsOnly, Category = "UI")
+	TSubclassOf<UUserWidget> TotalGoldWidgetClass;
+
+	// 생성된 위젯 인스턴스
+	UPROPERTY()
+	UUserWidget* TotalGoldWidget;
+
 	// 던전을 시작할 때
 	UFUNCTION(Exec)
 	void DungeonStart();	
