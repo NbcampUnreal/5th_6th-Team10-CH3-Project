@@ -290,16 +290,22 @@ void ATenGameState::BossBattle()
 void ATenGameState::MainUI()
 {
     // HUD가 켜져 있다면 닫기
-    if (TotalGoldWidgetClass)
-    {
-        TotalGoldWidget->RemoveFromParent();
-        TotalGoldWidget = nullptr;
+    if (TotalGoldWidget)
+    {//화면에 남아있을때만 제거
+        if (TotalGoldWidget->IsInViewport())
+        {
+            TotalGoldWidget->RemoveFromParent();
+        }
+         TotalGoldWidget = nullptr;
     }
 
     // 이미 메뉴가 떠 있으면 제거
     if (MainMenuWidgetInstance)
     {
-        MainMenuWidgetInstance->RemoveFromParent();
+        if (MainMenuWidgetInstance->IsInViewport())
+        {
+            MainMenuWidgetInstance->RemoveFromParent();
+        }
         MainMenuWidgetInstance = nullptr;
     }
     // 1. MainMenuWidgetClass가 할당되었는지 확인
