@@ -20,7 +20,8 @@ ATenGameState::ATenGameState()
     MainMenuWidgetInstance(nullptr)
 {
     AliveEnemyCount = 0;
-    SpawnedEnemyCount = 0;      
+    SpawnedEnemyCount = 0;    
+    TotalGoldWidget = nullptr;   // 변경: 위젯 초기화
 }
 
 void ATenGameState::BeginPlay()
@@ -28,6 +29,17 @@ void ATenGameState::BeginPlay()
 	Super::BeginPlay();
 
 	UpdateHUD();
+    //골드 UI
+    if (TotalGoldWidgetClass)
+    {
+        TotalGoldWidget = CreateWidget<UUserWidget>(GetWorld(), TotalGoldWidgetClass);
+        if (TotalGoldWidget)
+        {
+            TotalGoldWidget->AddToViewport(1);
+            UpdateTotalGoldUI(); // UI 초기 갱신
+            UE_LOG(LogTemp, Warning, TEXT("[UI] TotalGoldWidget Created"));
+        }
+    }
     // 게임인스턴스 정보를 통해 '던전 진행중'인지 확인
     if (UGameInstance* GameInstance = GetGameInstance())
     {
@@ -63,8 +75,13 @@ void ATenGameState::AddGold(int32 Amount)
     {
         UTenGameInstance* TenGameInstance = Cast<UTenGameInstance>(GameInstance);
         if (TenGameInstance)
-        {
+        {   //골드 증가
             TenGameInstance->AddGold(Amount);
+            //UI갱신 추가
+            UpdateTotalGoldUI();
+            // 디버그 로그 확인용
+            UE_LOG(LogTemp, Warning, TEXT("[Gold] +%d (Total: %d)"),
+                Amount, TenGameInstance->TotalGold);
         }
     }    
 }
@@ -128,10 +145,11 @@ void ATenGameState::StageStart()
                 // 2. 스폰된 액터를 AMonster 타입으로 캐스팅 (델리게이트)
                 ATenEnemyCharacter* SpawnedMonster = Cast<ATenEnemyCharacter>(SpawnedActor);
                 if (SpawnedMonster)
-                {
-                    // 3. 몬스터의 델리게이트에 GameState의 함수를 바인딩(등록)
-                    SpawnedMonster->OnEnemyKilled.AddDynamic(this, &ATenGameState::OnKillEnemy);
-                    // 현재 적 AI 카운트 증가
+                {   //**델리게이트 중복 방지 코드 추가
+                    if (!SpawnedMonster->OnEnemyKilled.IsAlreadyBound(this, &ATenGameState::OnKillEnemy))
+                    {// 3. 몬스터의 델리게이트에 GameState의 함수를 바인딩(등록)
+                        SpawnedMonster->OnEnemyKilled.AddDynamic(this, &ATenGameState::OnKillEnemy);
+                    }// 현재 적 AI 카운트 증가
                     AliveEnemyCount++;
                 }                            
             }
@@ -142,7 +160,7 @@ void ATenGameState::StageStart()
 
 void ATenGameState::OnKillEnemy(int32 Gold)
 {
-    AddGold(Gold);
+    AddGold(Gold);  //골드 반영
     AliveEnemyCount--;
     UE_LOG(LogTemp, Warning, TEXT("AliveEnemyCount : %d "), AliveEnemyCount);
 
@@ -333,6 +351,23 @@ void ATenGameState::MainUI()
                     PlayerController->SetInputMode(FInputModeUIOnly());
                     PlayerController->bShowMouseCursor = true;
                 }
+            }
+        }
+    }
+}
+
+void ATenGameState::UpdateTotalGoldUI()
+{
+    // 골드 수치 UI 업데이트
+    if (!TotalGoldWidget) return;
+
+    if (UTextBlock* GoldText = Cast<UTextBlock>(TotalGoldWidget->GetWidgetFromName(TEXT("TotalGoldText"))))
+    {
+        if (UGameInstance* GameInstance = GetGameInstance())
+        {
+            if (UTenGameInstance* TenGameInstance = Cast<UTenGameInstance>(GameInstance))
+            {
+                GoldText->SetText(FText::FromString(FString::Printf(TEXT("Gold: %d"), TenGameInstance->TotalGold)));
             }
         }
     }

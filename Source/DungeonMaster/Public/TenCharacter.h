@@ -11,6 +11,8 @@ class UCombatComponent;
 struct FInputActionValue;
 class UInputAction;
 class UStaticMeshComponent;
+class UWidgetComponent;
+class UUserWidget;
 
 // ƒ≥∏Ø≈Õ ≈¨∑°Ω∫
 UCLASS()
@@ -142,4 +144,23 @@ public:
     //æ÷¥‘ ∏˘≈∏¡÷ ∞‘≈Õ
     UAnimMontage* GetRangedAttackMontage() const;
     UAnimMontage* GetMeleeAttackMontage() const;
+
+    //∞ÒµÂ »πµÊ
+    UFUNCTION()
+    void HandleEnemyKilled(int32 GoldAmount);
+
+    //====Ui====
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "UI")
+    UWidgetComponent* OverheadWidget;
+
+    void UpdateOverheadHP();
+    
+    //∞ÒµÂ UI ¿ŒΩ∫≈œΩ∫
+    UPROPERTY()
+    UUserWidget* TotalGoldWidGet;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
+    TSubclassOf<UUserWidget> TotalGoldWidgetClass;//WBP_Total≈¨∑°Ω∫ ¬¸¡∂
+
+    void UpdateTotalGoldUI(); //∞ÒµÂ ∞ªΩ≈
 };

@@ -353,13 +353,13 @@ void ATenCharacter::HandleEnemyKilled(int32 GoldAmount)
 {
     UE_LOG(LogTemp, Warning, TEXT("Enemy killed! +%d Gold"), GoldAmount);
 
-    //if (UWorld* World = GetWorld())
-    //{
-    //    if (ATenGameState* GameState = World->GetGameState<ATenGameState>())
-    //    {
-    //        GameState->AddGold(GoldAmount);
-    //    }
-    //}
+    if (UWorld* World = GetWorld())
+    {
+        if (ATenGameState* GameState = World->GetGameState<ATenGameState>())
+        {
+            GameState->AddGold(GoldAmount);
+        }
+    }
 }
 
 void ATenCharacter::UpdateOverheadHP()

@@ -102,7 +102,7 @@ void UCombatComponent::SwapWeapon(EWeaponType NewWeaponType)
 bool UCombatComponent::CanFire() const
 {
     UWorld* W = GetWorld();
-    return W && (UGameplayStatics::GetTimeSeconds(W) - LastFireTime) >= (0.1f / FireRate);
+    return W && (UGameplayStatics::GetTimeSeconds(W) - LastFireTime) >= (1.f / FireRate);
 }
 
 // ===== 사격 함수 =====

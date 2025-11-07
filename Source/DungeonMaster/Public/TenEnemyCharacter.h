@@ -50,7 +50,7 @@ protected:
 	void OnDeathMontageEnded();
 	
 	//Àû Ã³Ä¡ ½Ã °ñµå È¹µæ·®
-	int32 Gold = 0;
+	int32 Gold = 20;
 
 	UPROPERTY(EditAnywhere, Category = "Animation")
 	UAnimMontage* DieMontage;
