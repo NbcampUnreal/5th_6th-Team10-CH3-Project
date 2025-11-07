@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -13,5 +13,7 @@ UCLASS()
 class DUNGEONMASTER_API ATenBossAIController : public ATenAIController
 {
 	GENERATED_BODY()
+public:
+	ATenBossAIController();
 	
 };

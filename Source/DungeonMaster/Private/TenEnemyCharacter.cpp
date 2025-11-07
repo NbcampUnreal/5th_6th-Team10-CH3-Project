@@ -1,10 +1,11 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "TenEnemyCharacter.h"
 #include "TenAIController.h"
 #include "CombatComponent.h"
 #include "Kismet/GameplayStatics.h"
+#include "Engine/DamageEvents.h"
 
 // Sets default values
 ATenEnemyCharacter::ATenEnemyCharacter()
@@ -60,8 +61,22 @@ float ATenEnemyCharacter::TakeDamage(float DamageAmount, FDamageEvent const& Dam
 		FVector KnockbackDir = (GetActorLocation() - DamageCauser->GetActorLocation()).GetSafeNormal();
 		LaunchCharacter(KnockbackDir * 300.f + FVector(0, 150.f, 150.f), true, true);
 	}
-
-
+	// 피격 방향 알림
+	if (DamageEvent.DamageTypeClass && DamageEvent.GetTypeID() == FPointDamageEvent::ClassID)
+	{
+		FVector ShotDirection = static_cast<const FPointDamageEvent*>(&DamageEvent)->ShotDirection;
+		UE_LOG(LogTemp, Warning, TEXT("ShotDirection: X=%f, Y=%f, Z=%f"), ShotDirection.X, ShotDirection.Y, ShotDirection.Z);
+		ATenAIController* AIController = Cast<ATenAIController>(GetController());
+		if (AIController)
+		{
+			FVector ThisLocation = this->GetActorLocation();
+			UE_LOG(LogTemp, Warning, TEXT("ThisLocation: X=%f, Y=%f, Z=%f"), ThisLocation.X, ThisLocation.Y, ThisLocation.Z);
+			FVector HitLocation = ThisLocation - (ShotDirection*5000);
+			UE_LOG(LogTemp, Warning, TEXT("HitLocation: X=%f, Y=%f, Z=%f"), HitLocation.X, HitLocation.Y, HitLocation.Z);
+			 
+			AIController->OnTakePointDamage(HitLocation);
+		}
+	}
 	return DamageAmount;
 }
 

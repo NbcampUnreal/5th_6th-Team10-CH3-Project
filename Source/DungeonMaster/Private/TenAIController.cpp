@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "TenAIController.h"
@@ -18,8 +18,8 @@ ATenAIController::ATenAIController()
 	SetPerceptionComponent(*AIPerception);
 
 	SightConfig = CreateDefaultSubobject<UAISenseConfig_Sight>(TEXT("SightConfig"));
-	SightConfig->SightRadius = 1000.0f;
-	SightConfig->LoseSightRadius = 1500.0f;
+	SightConfig->SightRadius = 2000.0f;
+	SightConfig->LoseSightRadius = 3000.0f;
 	SightConfig->PeripheralVisionAngleDegrees = 90.0f;
 	SightConfig->SetMaxAge(5.0f);
 
@@ -64,6 +64,15 @@ void ATenAIController::StopAI()
 	}
 
 	UnPossess();
+}
+
+void ATenAIController::OnTakePointDamage(FVector HitVector)
+{
+	if (BlackboardComp)
+	{
+		BlackboardComp->SetValueAsBool(TEXT("IsInvestigating"), true);
+		BlackboardComp->SetValueAsVector(TEXT("TargetLastKnownLocation"), HitVector);
+	}
 }
 
 void ATenAIController::BeginPlay()

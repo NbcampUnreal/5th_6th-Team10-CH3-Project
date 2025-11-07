@@ -1,4 +1,4 @@
-#include "Projectile.h"
+ï»¿#include "Projectile.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Components/SphereComponent.h"
 #include "Kismet/GameplayStatics.h"
@@ -7,42 +7,44 @@ AProjectile::AProjectile()
 {
 	PrimaryActorTick.bCanEverTick = false;
 
-	//Ãæµ¹ ¹üÀ§ ¿Í ÄÄÆ÷³ÍÆ® »ı¼º
+	//ì¶©ëŒ ë²”ìœ„ ì™€ ì»´í¬ë„ŒíŠ¸ ìƒì„±
 	CollisionComp = CreateDefaultSubobject<USphereComponent>(TEXT("SphereComp"));
-	CollisionComp->InitSphereRadius(10.f);		//Ãæµ¹ ¹üÀ§
+	CollisionComp->InitSphereRadius(10.f);		//ì¶©ëŒ ë²”ìœ„
 	CollisionComp->SetCollisionProfileName("Projectile");	
 	CollisionComp->OnComponentHit.AddDynamic(this, &AProjectile::OnHit);
 	RootComponent = CollisionComp;
 	
-	//Åõ»çÃ¼ ÀÌµ¿ ÄÄÆ÷³ÍÆ®
+	//íˆ¬ì‚¬ì²´ ì´ë™ ì»´í¬ë„ŒíŠ¸
 	ProjectileMovement = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("ProjectileMovement"));
-	ProjectileMovement->InitialSpeed = 9000.f;	//ÃÊ±â¼Óµµ
-	ProjectileMovement->MaxSpeed = 9000.f; //ÃÖ´ë ¼Óµµ
-	ProjectileMovement->bRotationFollowsVelocity = true;	//ÀÌµ¿ ¹æÇâ¿¡ µû¶ó È¸ÀüÇÏµµ·Ï ¼³Á¤
-	ProjectileMovement->bShouldBounce = false; //ÆÃ±âÁö ¾Êµµ·Ï ¼³Á¤
-	ProjectileMovement->ProjectileGravityScale = 0.f;//Áß·Â ¿µÇâ 0
+	ProjectileMovement->InitialSpeed = 9000.f;	//ì´ˆê¸°ì†ë„
+	ProjectileMovement->MaxSpeed = 9000.f; //ìµœëŒ€ ì†ë„
+	ProjectileMovement->bRotationFollowsVelocity = true;	//ì´ë™ ë°©í–¥ì— ë”°ë¼ íšŒì „í•˜ë„ë¡ ì„¤ì •
+	ProjectileMovement->bShouldBounce = false; //íŒ…ê¸°ì§€ ì•Šë„ë¡ ì„¤ì •
+	ProjectileMovement->ProjectileGravityScale = 0.f;//ì¤‘ë ¥ ì˜í–¥ 0
 
-	//Åõ»çÃ¼ »ı¸í ÁÖ±â
-	InitialLifeSpan = 2.0f; //2ÃÊ ÈÄ ÀÚµ¿ »ç¶óÁü
+	//íˆ¬ì‚¬ì²´ ìƒëª… ì£¼ê¸°
+	InitialLifeSpan = 2.0f; //2ì´ˆ í›„ ìë™ ì‚¬ë¼ì§
 }
 
-//Ãæµ¹ ½Ã È£Ãâ ÇÔ¼ö
+//ì¶©ëŒ ì‹œ í˜¸ì¶œ í•¨ìˆ˜
 void AProjectile::OnHit(
-	UPrimitiveComponent* HitComp,			//Ãæµ¹ÇÑ Åõ»çÃ¼
-	AActor* OtherActor,								//ºÎµúÈù ´ë»ó ¾×ÅÍ
-	UPrimitiveComponent* OtherComp,	//´ë»óÀÇ ÄÄÆ÷³ÍÆ®
-	FVector NormalImpulse,							//Ãæµ¹ ¹æÇâ ¹éÅÍ
+	UPrimitiveComponent* HitComp,			//ì¶©ëŒí•œ íˆ¬ì‚¬ì²´
+	AActor* OtherActor,								//ë¶€ë”ªíŒ ëŒ€ìƒ ì•¡í„°
+	UPrimitiveComponent* OtherComp,	//ëŒ€ìƒì˜ ì»´í¬ë„ŒíŠ¸
+	FVector NormalImpulse,							//ì¶©ëŒ ë°©í–¥ ë°±í„°
 	const FHitResult& Hit
 )
-{//´Ù¸¥ ¾×ÅÍ¿Í Ãæµ¹ Ã³¸®
+{//ë‹¤ë¥¸ ì•¡í„°ì™€ ì¶©ëŒ ì²˜ë¦¬
 	if (OtherActor &&OtherActor != this)
 	{
-		UGameplayStatics::ApplyDamage(
-			OtherActor,									//´ë¹ÌÁö ¹ŞÀ» ´ë»ó
-			Damage,											//Åõ»çÃ¼ °ø°İ·Â
-			nullptr,											//°ø°İÀÚ´Â ÄÁÆ®·Ñ·¯ ¾øÀ¸¸é null
-			this,													//´ë¹ÌÁö¸¦ ÁØ ¾×ÅÍ(Ä³¸¯ÅÍ)
-			UDamageType::StaticClass()		//´ë¹ÌÁö Å¸ÀÔ ±âº»Çü
+		UGameplayStatics::ApplyPointDamage(
+			OtherActor,									//ëŒ€ë¯¸ì§€ ë°›ì„ ëŒ€ìƒ
+			Damage,											//íˆ¬ì‚¬ì²´ ê³µê²©ë ¥
+			GetVelocity().GetSafeNormal(),				// íˆ¬ì‚¬ì²´ ë°©í–¥
+			Hit,
+			nullptr,											//ê³µê²©ìëŠ” ì»¨íŠ¸ë¡¤ëŸ¬ ì—†ìœ¼ë©´ null
+			this,													//ëŒ€ë¯¸ì§€ë¥¼ ì¤€ ì•¡í„°(ìºë¦­í„°)
+			UDamageType::StaticClass()		//ëŒ€ë¯¸ì§€ íƒ€ì… ê¸°ë³¸í˜•
 			);
 		Destroy();
 	}

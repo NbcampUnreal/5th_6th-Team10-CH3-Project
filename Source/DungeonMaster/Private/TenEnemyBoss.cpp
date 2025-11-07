@@ -1,11 +1,14 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "TenEnemyBoss.h"
 #include "Kismet/GameplayStatics.h"
+#include "BehaviorTree/BlackboardComponent.h"
+#include "TenAIController.h"
 
 ATenEnemyBoss::ATenEnemyBoss()
 {
+    Gold = 200;
 }
 
 void ATenEnemyBoss::SkillFirePillar(FVector Location)
@@ -40,22 +43,27 @@ void ATenEnemyBoss::BeginPlay()
 
 void ATenEnemyBoss::SpawnCircle(FVector Location)
 {
-    FActorSpawnParameters SpawnParams;
-    SpawnParams.Owner = this;
-    FRotator SpawnRotation;
-    FVector  SpawnLocation = Location;
-    SpawnLocation.Z = 0.0f;
-    GetWorld()->SpawnActor<AActor>(SkillActorClass, SpawnLocation, SpawnRotation, SpawnParams);
+    ATenAIController* AIController = Cast<ATenAIController>(GetController());
+    if (AIController)
+    {
+        AActor* TargetActor = Cast<AActor>(AIController->GetBlackboardComp()->GetValueAsObject(TEXT("TargetActor")));
+        FActorSpawnParameters SpawnParams;
+        SpawnParams.Owner = this;
+        FRotator SpawnRotation;
+        FVector  SpawnLocation = TargetActor->GetActorLocation();
+        SpawnLocation.Z = 0.01f;
+        GetWorld()->SpawnActor<AActor>(SkillActorClass, SpawnLocation, SpawnRotation, SpawnParams);
 
-    FTimerHandle CircleEnd;
-    FTimerDelegate TimerDel;
-    TimerDel.BindUFunction(this, FName("DamageFirePillar"), Location);
-    GetWorld()->GetTimerManager().SetTimer(
-        CircleEnd,
-        TimerDel,
-        3.0f,
-        false
-    );
+        FTimerHandle CircleEnd;
+        FTimerDelegate TimerDel;
+        TimerDel.BindUFunction(this, FName("DamageFirePillar"), SpawnLocation);
+        GetWorld()->GetTimerManager().SetTimer(
+            CircleEnd,
+            TimerDel,
+            2.0f,
+            false
+        );
+    }
 }
 
 void ATenEnemyBoss::DamageFirePillar(FVector Location)
@@ -64,7 +72,7 @@ void ATenEnemyBoss::DamageFirePillar(FVector Location)
         this,
         Damage * 2.0f,
         Location,
-        100.0f, // 불기둥 반경
+        480.0f, // 불기둥 반경
         UDamageType::StaticClass(),
         TArray<AActor*>{},
         this,
