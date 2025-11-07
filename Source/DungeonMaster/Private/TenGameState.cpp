@@ -291,8 +291,23 @@ void ATenGameState::BossStart()
 
 void ATenGameState::BossBattle()
 {
-    SpawnedEnemyCount = 1;
-    AliveEnemyCount = 1;
+    TArray<AActor*> FoundEnemies;
+    UGameplayStatics::GetAllActorsOfClass(GetWorld(), ATenEnemyCharacter::StaticClass(), FoundEnemies);
+    for (AActor* Actor : FoundEnemies)
+    {
+        ATenEnemyCharacter* Enemy = Cast<ATenEnemyCharacter>(Actor);
+        if (Enemy)
+        {
+            // 델리게이트 중복 방지
+            if (!Enemy->OnEnemyKilled.IsAlreadyBound(this, &ATenGameState::OnKillEnemy))
+            {
+                Enemy->OnEnemyKilled.AddDynamic(this, &ATenGameState::OnKillEnemy);
+                UE_LOG(LogTemp, Log, TEXT("[GameState] Bound OnEnemyKilled from %s"), *Enemy->GetName());
+            }
+
+            AliveEnemyCount++;
+        }
+    }
 }
 
 void ATenGameState::MainUI()
