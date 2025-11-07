@@ -66,6 +66,7 @@ public:
 	UFUNCTION(Exec)
 	void OnClearPortalTouched();
 	// 메인 레벨로 (던전 클리어, 사망 등)
+	UFUNCTION(BlueprintCallable, Category = "MainMenu")
 	void ToMainLevel();
 	// 적 처치 시 호출
 	UFUNCTION(Exec)
@@ -77,8 +78,6 @@ public:
 	void BossStart();
 	// 보스맵에서 실행될 함수
 	void BossBattle();
-	// HUD 업데이트
-	void UpdateHUD();
 	// MainUI 띄우기
 	void MainUI();
 
