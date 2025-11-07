@@ -256,11 +256,19 @@ void ATenGameState::ToMainLevel()
 void ATenGameState::PlayerDeath()
 {
     // 페널티 추가 필요
-
+    if (UGameInstance* GameInstance = GetGameInstance())
+    {
+        UTenGameInstance* TenGameInstance = Cast<UTenGameInstance>(GameInstance);
+        if (TenGameInstance)
+        {
+            float Gold = TenGameInstance->GetGold();
+            float Temp = Gold * 0.2f;
+            int LostGold = FMath::RoundToInt(Temp / 10.0f) * 10;
+            AddGold(-LostGold);
+        }
+    }
     // 사망 시 UI 
     MainUI();
-    //
-    // ToMainLevel();
 }
 
 void ATenGameState::BossStart()

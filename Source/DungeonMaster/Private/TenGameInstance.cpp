@@ -37,3 +37,8 @@ void UTenGameInstance::BossBattle(bool EnterBoss)
 	IsBossBattle = EnterBoss;
 }
 
+int32 UTenGameInstance::GetGold()
+{
+	return TotalGold;
+}
+

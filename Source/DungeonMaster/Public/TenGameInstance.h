@@ -34,6 +34,7 @@ public:
 	// °ñµå È¹µæ ÇÔ¼ö
 	UFUNCTION(BlueprintCallable, Category = "GameData")
 	void AddGold(int32 Amount);
+	int32 GetGold();
 
 	void AddCurrentStage(int8 amount);
 	void SetStageRepeats(int32 amount);
