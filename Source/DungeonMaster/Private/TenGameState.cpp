@@ -13,6 +13,7 @@
 #include "Components/TextBlock.h"
 #include "Blueprint/UserWidget.h"
 #include "Engine/World.h"
+#include "Components/TextBlock.h"
 #include "GameFramework/Actor.h"
 
 ATenGameState::ATenGameState()
@@ -28,7 +29,6 @@ void ATenGameState::BeginPlay()
 {
 	Super::BeginPlay();
 
-	UpdateHUD();
     //골드 UI
     if (TotalGoldWidgetClass)
     {
@@ -63,9 +63,21 @@ void ATenGameState::BeginPlay()
     FString LevelName = GetWorld()->GetMapName();
     LevelName.RemoveFromStart(GetWorld()->StreamingLevelsPrefix);
     // MainUILevel 일 때, 메뉴 UI 생성
-    if (LevelName == TEXT("MainUILevel")) 
+    if (LevelName == TEXT("Test_MainUI")) 
     {
         MainUI();
+    }
+    else
+    {
+        // PlayerController를 가져옴 (널 체크 포함)
+        if (APlayerController* PlayerController = GetWorld()->GetFirstPlayerController())
+        {
+            if (ATenPlayerController* TenPlayerController = Cast<ATenPlayerController>(PlayerController))
+            {
+                TenPlayerController->SetInputMode(FInputModeGameOnly());
+                TenPlayerController->bShowMouseCursor = false;
+            }            
+        }        
     }
 }
 
@@ -236,7 +248,8 @@ void ATenGameState::ToMainLevel()
             TenGameInstance->BossBattle(false);
         }
     }
-    // 클리어레벨에서 메인레벨로
+    // 메인레벨로 이동
+    UE_LOG(LogTemp, Warning, TEXT("ToMainLevel"));
     UGameplayStatics::OpenLevel(GetWorld(), FName("Test_MainLevel"));
 }
 
@@ -245,9 +258,9 @@ void ATenGameState::PlayerDeath()
     // 페널티 추가 필요
 
     // 사망 시 UI 
-
-    // 메인 레벨로    
-    ToMainLevel();
+    MainUI();
+    //
+    // ToMainLevel();
 }
 
 void ATenGameState::BossStart()
@@ -274,60 +287,21 @@ void ATenGameState::BossBattle()
     AliveEnemyCount = 1;
 }
 
-
-void ATenGameState::UpdateHUD()
-{
-    // 이전 과제에서 그대로 가져왔습니다.
-    /*
-	if (APlayerController* PlayerController = GetWorld()->GetFirstPlayerController())
-	{
-		ATenPlayerController* TenPlayerController = Cast<ATenPlayerController>(PlayerController);
-		{
-			if (UUserWidget* HUDWidget = TenPlayerController->GetHUDWidget())
-			{				
-				// 골드
-				if (UTextBlock* ScoreText = Cast<UTextBlock>(HUDWidget->GetWidgetFromName(TEXT("Gold"))))
-				{
-					if (UGameInstance* GameInstance = GetGameInstance())
-					{
-						UTenGameInstance* TenGameInstance = Cast<UTenGameInstance>(GameInstance);
-						if (TenGameInstance)
-						{
-							ScoreText->SetText(FText::FromString(FString::Printf(TEXT("Score: %d"), TenGameInstance->Gold)));
-						}
-					}
-				}
-				// 스테이지
-				if (UTextBlock* LevelIndexText = Cast<UTextBlock>(HUDWidget->GetWidgetFromName(TEXT("Level"))))
-				{
-					LevelIndexText->SetText(FText::FromString(FString::Printf(TEXT("Level: %d"), CurrentLevel + 1)));
-				}
-				// 체력
-				if (UTextBlock* HPText = Cast<UTextBlock>(HUDWidget->GetWidgetFromName(TEXT("HP"))))
-				{
-					float health = 1;
-					// 1. PlayerController가 소유하고 있는 Pawn(캐릭터)을 가져옵니다.
-					if (APawn* PlayerPawn = PlayerController->GetPawn())
-					{
-						// 2. Pawn을 TenCharacter 클래스로 캐스팅합니다.
-						ATenCharacter* TenCharacter = Cast<ATenCharacter>(PlayerPawn);
-
-						if (TenCharacter)
-						{
-							// 3. ATenCharacter의 GetHealth() 함수를 호출하여 실제 체력을 가져옵니다.
-							health = TenCharacter->GetHealth();
-						}
-					}
-					HPText->SetText(FText::FromString(FString::Printf(TEXT("HP: %.1f"), health)));
-				}
-			}
-		}
-	}
-    */
-}
-
 void ATenGameState::MainUI()
 {
+    // HUD가 켜져 있다면 닫기
+    if (TotalGoldWidgetClass)
+    {
+        TotalGoldWidget->RemoveFromParent();
+        TotalGoldWidget = nullptr;
+    }
+
+    // 이미 메뉴가 떠 있으면 제거
+    if (MainMenuWidgetInstance)
+    {
+        MainMenuWidgetInstance->RemoveFromParent();
+        MainMenuWidgetInstance = nullptr;
+    }
     // 1. MainMenuWidgetClass가 할당되었는지 확인
     if (MainMenuWidgetClass)
     {
@@ -350,6 +324,22 @@ void ATenGameState::MainUI()
                 {
                     PlayerController->SetInputMode(FInputModeUIOnly());
                     PlayerController->bShowMouseCursor = true;
+                }
+            }
+            
+            if (UTextBlock* ButtonText = Cast<UTextBlock>(MainMenuWidgetInstance->GetWidgetFromName(TEXT("StartButtonText"))))
+            {
+                // 현재 레벨 정보 불러오기
+                FString LevelName = GetWorld()->GetMapName();
+                LevelName.RemoveFromStart(GetWorld()->StreamingLevelsPrefix);
+                // MainUILevel 일 때 Strat 버튼, 아닐 때는 Respawn 버튼
+                if (LevelName == TEXT("Test_MainUI"))
+                {
+                    ButtonText->SetText(FText::FromString("Start"));
+                }
+                else
+                {
+                    ButtonText->SetText(FText::FromString("Respawn"));
                 }
             }
         }
