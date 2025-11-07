@@ -112,6 +112,16 @@ void UCombatComponent::StartFire()
     bCanAttack = false;
     UE_LOG(LogTemp, Warning, TEXT("[DEBUG] StartFire() Called. WeaponType = %d"), (int32)CurrentWeaponType);
 
+    //무기 타입별 모션 프레임
+    float FrameCount = 0.0f;
+    if (CurrentWeaponType == EWeaponType::Melee)
+        FrameCount = 16.f;
+    else if (CurrentWeaponType == EWeaponType::Ranged)
+        FrameCount = 20.f;
+
+    //프레임 단위 초로 변환
+    AttackDuration = FrameCount / 30.0f;
+
     //원거리 무기 장착시에만 사격
     if (CurrentWeaponType == EWeaponType::Ranged)
     {
@@ -131,6 +141,8 @@ void UCombatComponent::StartFire()
 
         MeleeAttack();  //근접 공격 호출
     }
+    //공격 후딜 애니매이션 길이 보정
+    float AdjustedCooldown = AttackDuration + 0.1f;
 
     // 공통 후딜
     GetWorld()->GetTimerManager().SetTimer(

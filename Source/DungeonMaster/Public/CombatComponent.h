@@ -103,4 +103,8 @@ protected:
     void FireProjectile();  
     //무기 스왑 함수
     void SwapWeapon(EWeaponType NewWeaponType);
+
+    // 실제 공격 모션 길이 (초 단위)
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
+    float AttackDuration; 
 };

@@ -13,6 +13,8 @@
 #include "Components/TextBlock.h"
 #include "TenGameInstance.h"
 #include "Blueprint/UserWidget.h"
+#include "UObject/WeakObjectPtrTemplates.h"   // TWeakObjectPtr
+#include "UObject/UObjectGlobals.h"      
 
 ATenCharacter::ATenCharacter()
 {
@@ -262,7 +264,18 @@ float ATenCharacter::TakeDamage(float DamageAmount,
 
 //=====사망처리=====
 void ATenCharacter::OnDeath()
-{//사망처리 몽타주 
+{
+    //모든 타이머 제거
+    GetWorldTimerManager().ClearAllTimersForObject(this);
+    
+    //사망 중 몽타주 충돌 방지
+    if (UAnimInstance* Anim = GetMesh()->GetAnimInstance())
+    {
+        Anim->StopAllMontages(0.25f);
+    }
+    //회피 무적상태 정리
+    ClearDodgeTimerAndState();
+    //사망처리 몽타주 
     if (DeathMontage)
     {
         PlayAnimMontage(DeathMontage);
@@ -329,19 +342,23 @@ void ATenCharacter::Dodge()
     }
     //캐릭터 앞으로 이동
     LaunchCharacter(DashVelocity, true, true);
-
+    //약한 포인터로 자기 자신 캡쳐, 레벨 전환 파괴 안전하게
+    TWeakObjectPtr<ATenCharacter> WeakThis(this);
     //일정 시간 후 회피 종료
-    GetWorldTimerManager().SetTimer(Timer_DodgeEnd, [this]()
+    GetWorldTimerManager().SetTimer(Timer_DodgeEnd, [WeakThis]()
         {
-            bIsDodging = false;
+            ATenCharacter* Self = WeakThis.Get();
+            if (!Self || !IsValid(Self) || Self->IsActorBeingDestroyed()) return;
 
-            if (CombatComp)
-                CombatComp->SetInvincible(false); // 무적 해제
-
-            if (auto* Move = GetCharacterMovement())
+            Self->bIsDodging = false;
+            if (IsValid(Self->CombatComp))
+            {
+                Self->CombatComp->SetInvincible(false); // 무적 해제
+            }
+            if (auto* Move =Self-> GetCharacterMovement())
             {
                 Move->StopMovementImmediately();
-                Move->BrakingFrictionFactor = SavedBrakingFrictionFactor;
+                Move->BrakingFrictionFactor = Self->SavedBrakingFrictionFactor;
                 Move->GroundFriction = 8.f;
                 Move->MaxAcceleration = 2048.f;
             }
@@ -373,4 +390,24 @@ void ATenCharacter::UpdateOverheadHP()
     {
         HPText->SetText(FText::FromString(FString::Printf(TEXT("%.0f / %.0f"), Health, MaxHealth)));
     }
+}
+
+void ATenCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+    //레벨 이동/Destroy 중 콜백이 더 이상 실행되지 않도록 정리
+    ClearDodgeTimerAndState();
+    Super::EndPlay(EndPlayReason);
+}
+
+void ATenCharacter::ClearDodgeTimerAndState()
+{//타이머 정지
+    GetWorldTimerManager().ClearTimer(Timer_DodgeEnd);
+
+    //무적이 켜진 상태로 남아 있으면 해제
+    if (IsValid(CombatComp))
+    {
+        CombatComp->SetInvincible(false);
+    }
+
+    bIsDodging = false;
 }

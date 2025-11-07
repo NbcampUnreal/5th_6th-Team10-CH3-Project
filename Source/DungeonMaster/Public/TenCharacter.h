@@ -26,7 +26,10 @@ public:
 protected:
     virtual void BeginPlay() override;
     virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
-   
+   //타이머 레벨 전환 파괴 시 정리용
+    virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+   //타이머 상태 정리용
+    void ClearDodgeTimerAndState();
     //대미지
     virtual float TakeDamage(
         float DamageAmount, 
