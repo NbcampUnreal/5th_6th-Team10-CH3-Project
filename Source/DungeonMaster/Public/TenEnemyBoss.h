@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -15,7 +15,7 @@ class DUNGEONMASTER_API ATenEnemyBoss : public ATenEnemyCharacter
 	GENERATED_BODY()
 public:
 	ATenEnemyBoss();
-	void SkillFirePillar(FVector Location);
+	void SkillFirePillar();
 
 protected:
 	virtual void BeginPlay() override;
@@ -25,7 +25,7 @@ protected:
 
 private:
 	UFUNCTION()
-	void SpawnCircle(FVector Location);
+	void SpawnCircle();
 
 	UFUNCTION()
 	void DamageFirePillar(FVector Location);

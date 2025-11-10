@@ -11,7 +11,7 @@ ATenEnemyBoss::ATenEnemyBoss()
     Gold = 200;
 }
 
-void ATenEnemyBoss::SkillFirePillar(FVector Location)
+void ATenEnemyBoss::SkillFirePillar()
 {
     //애님 몽타주 재생(공격)
     if (AttackMontage)
@@ -23,11 +23,10 @@ void ATenEnemyBoss::SkillFirePillar(FVector Location)
             float AnimLength = 1.0f;
 
             FTimerHandle AnimEnd;
-            FTimerDelegate TimerDel;
-            TimerDel.BindUFunction(this, FName("SpawnCircle"), Location);
             GetWorld()->GetTimerManager().SetTimer(
                 AnimEnd,
-                TimerDel,
+                this,
+                &ATenEnemyBoss::SpawnCircle,
                 AnimLength,
                 false
             );
@@ -41,12 +40,14 @@ void ATenEnemyBoss::BeginPlay()
 	Super::BeginPlay();
 }
 
-void ATenEnemyBoss::SpawnCircle(FVector Location)
+void ATenEnemyBoss::SpawnCircle()
 {
     ATenAIController* AIController = Cast<ATenAIController>(GetController());
     if (AIController)
     {
         AActor* TargetActor = Cast<AActor>(AIController->GetBlackboardComp()->GetValueAsObject(TEXT("TargetActor")));
+        if (TargetActor == nullptr) return;
+
         FActorSpawnParameters SpawnParams;
         SpawnParams.Owner = this;
         FRotator SpawnRotation;

@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "BTTask_SkillFirePillar.h"
@@ -26,7 +26,7 @@ EBTNodeResult::Type UBTTask_SkillFirePillar::ExecuteTask(UBehaviorTreeComponent&
     if (BlackboardComp)
     {
         AActor* TargetActor = Cast<AActor>(BlackboardComp->GetValueAsObject(TEXT("TargetActor")));
-        Monster->SkillFirePillar(TargetActor->GetActorLocation());
+        Monster->SkillFirePillar();
         UE_LOG(LogTemp, Warning, TEXT("[DM] FirePillar!!"));
     }
 
