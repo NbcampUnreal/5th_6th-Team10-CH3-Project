@@ -44,22 +44,46 @@ float ATenEnemyCharacter::TakeDamage(float DamageAmount, FDamageEvent const& Dam
 	}
 	// 몬스터 경직 구현
 	if (AAIController* AI = Cast<AAIController>(GetController()))
-	{
+	{	
 		AI->StopMovement();
-		GetWorld()->GetTimerManager().SetTimerForNextTick([this, AI]()
-			{
-				//1.5초뒤 다시 움직이게 설정
-				FTimerHandle StunHandle;
-				GetWorld()->GetTimerManager().SetTimer
-				(StunHandle, [AI]()
-					{
-						if (AI && AI->GetPawn())
-							AI->MoveToActor(AI->GetFocusActor());
-					}, 1.5f, false);
-				});
+
+		//약한 참조
+		TWeakObjectPtr<AAIController> WeakAI = AI;
+		UWorld* World = GetWorld();
+		//월드이동시 방어 코드
+		if (World && !World->bIsTearingDown) return DamageAmount;
+
+		World->GetTimerManager().SetTimerForNextTick([WeakAI]()
+			{	//1.5초뒤 다시 움직이게 설정
+				if (!WeakAI.IsValid()) return;
+
+				UWorld* InnerWorld = WeakAI->GetWorld();
+				if (!InnerWorld || InnerWorld->bIsTearingDown)return;
+
+				 FTimerHandle StunHandle;
+            InnerWorld->GetTimerManager().SetTimer(StunHandle, [WeakAI]()
+            {
+                if (!WeakAI.IsValid()) return;
+
+                AAIController* AI = WeakAI.Get();
+                if (!AI) return;
+
+                APawn* Pawn = AI->GetPawn();
+                if (!IsValid(Pawn)) return;
+
+                AActor* FocusActor = AI->GetFocusActor();
+                if (!IsValid(FocusActor)) return;
+
+                AI->MoveToActor(FocusActor);
+            }, 1.5f, false);
+        });
+			
 		//피격 시 넉백
-		FVector KnockbackDir = (GetActorLocation() - DamageCauser->GetActorLocation()).GetSafeNormal();
-		LaunchCharacter(KnockbackDir * 300.f + FVector(0, 150.f, 150.f), true, true);
+		if (IsValid(DamageCauser) && GetCharacterMovement() && !GetWorld()->bIsTearingDown)
+		{
+			FVector KnockbackDir = (GetActorLocation() - DamageCauser->GetActorLocation()).GetSafeNormal();
+			LaunchCharacter(KnockbackDir * 300.f + FVector(0, 150.f, 150.f), true, true);
+		}
 	}
 	// 피격 방향 알림
 	if (DamageEvent.DamageTypeClass && DamageEvent.GetTypeID() == FPointDamageEvent::ClassID)
